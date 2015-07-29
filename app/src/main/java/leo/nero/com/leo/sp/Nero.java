@@ -122,11 +122,17 @@ public class Nero {
      * @return
      */
     private <T> T get(String key, Class<T> clazz) {
-        if (cache == null) return null;
-        if (!containsKey(key)) return null;
-
-        Object value = cache.get(key);
         T obj = null;
+        Object value;
+        if (containsKey(key)) {
+            value = cache.get(key);
+        } else {
+            SharedPreferences sp = getInstance().getSharedPreferences();
+            Map<String, ?> map = sp.getAll();
+            if (!map.containsKey(key)) return null;
+            value = map.get(key);
+        }
+
         if (clazz.isInstance(value)) {
             obj = clazz.cast(value);
         }
@@ -201,7 +207,6 @@ public class Nero {
      * ******************************* 额外判断key值是否存在的方法 ********************************
      */
     public static boolean containsKey(String key) {
-        if (getInstance().cache == null) return false;
         if (getInstance().cache.get(key) == null) return false;
         return true;
     }
@@ -210,7 +215,6 @@ public class Nero {
      * ******************************* 删除偏好 *****************************************************
      */
     public static void removeAt(String key) {
-        if (getInstance().cache == null) return;
         getInstance().cache.remove(key);
         SharedPreferences.Editor editor = getInstance().getSharedPreferences().edit();
         editor.remove(key);
@@ -218,8 +222,6 @@ public class Nero {
     }
 
     public static void clearAll() {
-        if (getInstance().cache == null) return;
-
         SharedPreferences sp = getInstance().getSharedPreferences();
         getInstance().cache.clearAll(sp.getAll());
 
