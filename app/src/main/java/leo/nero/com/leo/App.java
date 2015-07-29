@@ -9,7 +9,7 @@ import leo.nero.com.leo.sp.Nero;
  */
 public class App extends Application {
 
-    private static App instance = new App();
+    private static App instance;
 
     public static App getInstance() {
         return instance;

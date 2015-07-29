@@ -2,12 +2,13 @@ package leo.nero.com.leo.sp;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.LruCache;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import leo.nero.com.leo.App;
+import leo.nero.com.leo.cache.Cache;
 
 /**
  * Created by zhouyou on 2015/7/17.
@@ -28,20 +29,22 @@ public class Nero {
      */
     private boolean wasInitialized = false;
 
+
     /**
-     * in-memory data | 在内存中记录偏好数据
+     * in-memory data | 在内存中记录偏好数据（有缓存的）
      */
-    private Map<String, Object> mData;
+    private Cache cache;
 
-    public Nero() {
-
+    private Nero() {
+        int maxMemory = (int) Runtime.getRuntime().maxMemory();
+        int cacheSize = maxMemory / 8;
+        cache = new Cache(cacheSize);
     }
 
     private void initContext(Context context) {
         mContext = context.getApplicationContext();
         SharedPreferences sp = getSharedPreferences();
-        mData = new ConcurrentHashMap<>();
-        mData.putAll(sp.getAll());
+        cache.putAll(sp.getAll());
         wasInitialized = true;
     }
 
@@ -75,9 +78,9 @@ public class Nero {
     /**
      * *********************************** 保存|获取数据 ******************************************
      */
-
     /**
      * 写入数据
+     *
      * @param key
      * @param value
      * @return
@@ -104,7 +107,7 @@ public class Nero {
 
         if (isPut) {
             isSuccess = editor.commit();
-            mData.put(key, value);
+            cache.put(key, value);
         }
 
         return isSuccess;
@@ -112,14 +115,15 @@ public class Nero {
 
     /**
      * 从内存中读取偏好数据
+     *
      * @param key
      * @param clazz
      * @param <T>
      * @return
      */
     private <T> T get(String key, Class<T> clazz) {
-        if (mData == null) return null;
-        Object value = mData.get(key);
+        if (cache == null) return null;
+        Object value = cache.get(key);
         T obj = null;
         if (clazz.isInstance(value)) {
             obj = clazz.cast(value);
@@ -195,24 +199,29 @@ public class Nero {
      * ******************************* 额外判断key值是否存在的方法 ********************************
      */
     public static boolean containsKey(String key) {
-        return getInstance().mData.containsKey(key);
+        if (getInstance().cache == null) return false;
+        if (getInstance().cache.get(key) == null) return false;
+        return true;
     }
 
     /**
      * ******************************* 删除偏好 *****************************************************
      */
     public static void removeAt(String key) {
-        if (getInstance().mData == null) return;
-        getInstance().mData.remove(key);
+        if (getInstance().cache == null) return;
+        getInstance().cache.remove(key);
         SharedPreferences.Editor editor = getInstance().getSharedPreferences().edit();
         editor.remove(key);
         editor.commit();
     }
 
     public static void clearAll() {
-        if (getInstance().mData == null) return;
-        getInstance().mData.clear();
-        SharedPreferences.Editor editor = getInstance().getSharedPreferences().edit();
+        if (getInstance().cache == null) return;
+
+        SharedPreferences sp = getInstance().getSharedPreferences();
+        getInstance().cache.clearAll(sp.getAll());
+
+        SharedPreferences.Editor editor = sp.edit();
         editor.clear();
         editor.commit();
     }

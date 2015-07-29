@@ -29,6 +29,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
             etText.setText(s);
             etText.setSelection(s.length());
         }
+
     }
 
     @Override
