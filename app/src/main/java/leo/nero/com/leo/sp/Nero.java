@@ -123,6 +123,8 @@ public class Nero {
      */
     private <T> T get(String key, Class<T> clazz) {
         if (cache == null) return null;
+        if (!containsKey(key)) return null;
+
         Object value = cache.get(key);
         T obj = null;
         if (clazz.isInstance(value)) {
